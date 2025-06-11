@@ -1,4 +1,19 @@
 import random
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Dict
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Puedes poner ["http://localhost:5500"] para más seguridad
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Función para obtener el MCD y los coeficientes de Bezout
 def egcd(a, b):
@@ -42,16 +57,20 @@ def descifrar(cifrado, clave_privada):
     # Aplicamos RSA y convertimos el número a carácter
     return ''.join([chr(pow(c, d, n)) for c in cifrado])
 
-# Ejemplo de uso
-if __name__ == "__main__":
-    mensaje = input("Ingresa una palabra corta para cifrar: ")
+# Define la estructura del JSON esperado
+class InputData(BaseModel):
+    mensaje: str
 
-    clave_publica, clave_privada = generar_claves()
-    print(f"Clave pública: {clave_publica}")
-    print(f"Clave privada: {clave_privada}")
+# Endpoint que recibe un JSON y retorna otro
+@app.post("/cifrar/")
+async def cifrar_data(data: InputData):
+    # Procesamiento: ejemplo, crear un saludo
+    clave_publica, _ = generar_claves()
+    cifrado = cifrar(data.mensaje, clave_publica)
+    # Convertimos la lista a string legible
+    texto_cifrado = ' '.join(map(str, cifrado))
+    # Retornar respuesta como JSON
+    return {
+        "mensaje": texto_cifrado
+    }
 
-    cifrado = cifrar(mensaje, clave_publica)
-    print(f"Mensaje cifrado: {cifrado}")
-
-    descifrado = descifrar(cifrado, clave_privada)
-    print(f"Mensaje descifrado: {descifrado}")
