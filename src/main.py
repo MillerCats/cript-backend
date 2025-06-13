@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from rsa_utils import generar_claves, cifrar, descifrar
+from src.rsa_utils import generar_claves, cifrar, descifrar
 
 app = FastAPI()
 
