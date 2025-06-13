@@ -1,4 +1,5 @@
 import random
+import math
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,6 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def factorizar_n(n):
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            return i, n // i
+    raise ValueError("No se pudo factorizar n.")
 
 # Función para obtener el MCD y los coeficientes de Bezout
 def egcd(a, b):
@@ -56,6 +62,34 @@ def descifrar(cifrado, clave_privada):
     d, n = clave_privada
     # Aplicamos RSA y convertimos el número a carácter
     return ''.join([chr(pow(c, d, n)) for c in cifrado])
+
+# Descifrar el mensaje cifrado sin conocer d (vulnerando RSA)
+def vulnerar_rsa(clave_publica, cifrado):
+    e, n = clave_publica
+    print(f"[+] Intentando vulnerar n = {n}...")
+
+    p, q = factorizar_n(n)
+    print(f"[+] Éxito: n = p * q = {p} * {q}")
+
+    phi = (p - 1) * (q - 1)
+    d = modinv(e, phi)
+    print(f"[+] Calculado d = {d}")
+
+    # Descifrar
+    descifrado = ''.join([chr(pow(c, d, n)) for c in cifrado])
+    return descifrado
+
+if __name__ == "__main__":
+    mensaje = input("Ingresa una palabra: ")
+    clave_publica, clave_privada = generar_claves()
+    print(f"Clave pública: {clave_publica}")
+    print(f"Clave privada: {clave_privada}")
+
+    cifrado = cifrar(mensaje, clave_publica)
+    print(f"Mensaje cifrado: {cifrado}")
+    # Supón que este es el mensaje cifrado interceptado
+    mensaje_descifrado = vulnerar_rsa(clave_publica, cifrado)
+    print(f"🔓 Mensaje descifrado (vulnerado): {mensaje_descifrado}")
 
 # Define la estructura del JSON esperado
 class InputData(BaseModel):
