@@ -1,6 +1,6 @@
 **Instalar dependencias**
 ```sh
-pip install fastapi uvicorn websockets
+pip install fastapi sympy uvicorn websockets
 ```
 
 **Ejecutar**: 
