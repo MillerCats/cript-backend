@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from src.rsa_utils import generar_claves, cifrar, descifrar
+from src.app import corroborar_clave_privada
 
 app = FastAPI()
 
@@ -17,6 +18,11 @@ app.add_middleware(
 # Claves globales simuladas por sesión
 claves = generar_claves(bits=8)
 
+class VulnerarRequest(BaseModel):
+    d: int
+    n: int
+    e: int
+
 class CifrarRequest(BaseModel):
     mensaje: str
     e: int
@@ -30,8 +36,12 @@ class DescifrarRequest(BaseModel):
 @app.get("/clave")
 def obtener_clave_publica():
     e, n = claves["public"]
-    d, _ = claves["private"]
-    return {"e": e, "n": n, "d": d}
+    return {"e": e, "n": n}
+
+@app.post("/vulnerar")
+def vulnerar_clave_privada(priv: VulnerarRequest):
+    valid = corroborar_clave_privada((priv.d, priv.n), (priv.e,priv.n))
+    return {"is_valid": valid}
 
 @app.post("/cifrar")
 def cifrar_mensaje(req: CifrarRequest):
