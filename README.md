@@ -5,5 +5,5 @@ pip install fastapi sympy uvicorn websockets
 
 **Ejecutar**: 
 ```sh
-uvicorn src.main:app --reload`
+uvicorn main:app --reload`
 ```
