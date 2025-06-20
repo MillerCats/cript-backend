@@ -1,9 +1,14 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from src.rsa_utils import generar_claves, cifrar, descifrar
+from src.models import *
 from src.vulnerar_util import corroborar_clave_privada
+from sqlalchemy.orm import Session
+from database import db_session, init_db
+from schemas import UserCreate, UserLogin, UserResponse
+from auth import registrar_usuario, iniciar_sesion
 
 app = FastAPI()
 
@@ -15,67 +20,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Claves globales simuladas por sesión
-claves = generar_claves(bits=8)
+# Inicializar DB al arrancar
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
-class VulnerarRequest(BaseModel):
-    d: int
-    n: int
-    e: int
-
-class CifrarRequest(BaseModel):
-    mensaje: str
-    e: int
-    n: int
-
-class DescifrarRequest(BaseModel):
-    cifrado: list
-    d: int
-    n: int
-
-@app.get("/clave")
-def obtener_clave_publica():
-    e, n = claves["public"]
-    return {"e": e, "n": n}
-
-@app.post("/vulnerar")
-def vulnerar_clave_privada(priv: VulnerarRequest):
-    valid = corroborar_clave_privada((priv.d, priv.n), (priv.e,priv.n))
-    return {"is_valid": valid}
-
-@app.post("/cifrar")
-def cifrar_mensaje(req: CifrarRequest):
-    return {"cifrado": cifrar(req.mensaje, req.e, req.n)}
-
-@app.post("/descifrar")
-def descifrar_mensaje(req: DescifrarRequest):
-    return {"mensaje": descifrar(req.cifrado, req.d, req.n)}
-
-# --- WebSocket: Comunicación entre usuarios ---
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-manager = ConnectionManager()
-
-@app.websocket("/ws/chat")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+def get_db():
+    db = db_session()
     try:
-        while True:
-            data = await websocket.receive_text()
-            await manager.broadcast(data)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        yield db
+    finally:
+        db.close()
+
+# Endpoint para registrar
+@app.post("/registro", response_model=UserResponse)
+def registrar(user: UserCreate, db: Session = Depends(get_db)):
+    return registrar_usuario(db, user)
+
+# Endpoint para login
+@app.post("/login", response_model=UserResponse)
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    return iniciar_sesion(db, user)
