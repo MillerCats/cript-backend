@@ -1,6 +1,6 @@
 **Instalar dependencias**
 ```sh
-pip install fastapi sympy uvicorn websockets
+pip install fastapi sympy uvicorn websockets python-tds sqlalchemy_pytds sqlalchemy
 ```
 
 **Ejecutar**: 
