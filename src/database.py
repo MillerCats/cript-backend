@@ -17,5 +17,12 @@ db_session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
 def init_db():
-    import models
+    from src.tables import User  # Importa modelos aquí para registrar las tablas
     Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = db_session()
+    try:
+        yield db
+    finally:
+        db.close()

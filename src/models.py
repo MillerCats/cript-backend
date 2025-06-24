@@ -1,10 +1,14 @@
 from pydantic import BaseModel
 from typing import List
 
-class Usuario(BaseModel):
+class UserCreate(BaseModel):
     nombre: str
-    public_key: tuple  # (e, n)
-    private_key: tuple  # (d, n)
+    correo: str
+    user_pass: str
+
+class UserLogin(BaseModel):
+    nombre: str
+    user_pass: str
 
 class Mensaje(BaseModel):
     origen: str
